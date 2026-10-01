@@ -9,6 +9,7 @@ import com.vn.thu.config.JpaConfig_24162126;
 import com.vn.thu.entity.Book_24162126;
 import com.vn.thu.entity.Order_24162126;
 import com.vn.thu.model.CartItem_24162126;
+import com.vn.thu.model.OrderStatus_24162126;
 import com.vn.thu.model.ShippingDetails_24162126;
 import jakarta.persistence.*;
 
@@ -75,13 +76,63 @@ public class OrderService_24162126 {
     }
 
     public Order_24162126 findForOwner(long id, String ownerKey) {
-        if (ownerKey == null) return null;
+        return findForOwner(id, null, ownerKey);
+    }
+
+    public Order_24162126 findForOwner(long id, Integer userId, String ownerKey) {
+        if (userId == null && ownerKey == null) return null;
         EntityManager em = entityManagers.get();
         try {
-            return em.createQuery("SELECT DISTINCT o FROM Order_24162126 o LEFT JOIN FETCH o.items "
-                    + "WHERE o.id = :id AND o.ownerKey = :owner", Order_24162126.class)
-                    .setParameter("id", id).setParameter("owner", ownerKey)
-                    .getResultStream().findFirst().orElse(null);
+            TypedQuery<Order_24162126> query = em.createQuery(
+                    "SELECT DISTINCT o FROM Order_24162126 o LEFT JOIN FETCH o.items WHERE o.id = :id AND "
+                    + visibility(userId, ownerKey), Order_24162126.class);
+            query.setParameter("id", id);
+            bindViewer(query, userId, ownerKey);
+            return query.getResultList().stream().findFirst().orElse(null);
         } finally { em.close(); }
+    }
+
+    public long countHistory(Integer userId, String ownerKey, OrderStatus_24162126 status) {
+        if (userId == null && ownerKey == null) return 0;
+        EntityManager em = entityManagers.get();
+        try {
+            TypedQuery<Long> query = em.createQuery("SELECT COUNT(o) FROM Order_24162126 o WHERE "
+                    + visibility(userId, ownerKey) + statusClause(status), Long.class);
+            bindViewer(query, userId, ownerKey);
+            if (status != null) query.setParameter("status", status.getCode());
+            return query.getSingleResult();
+        } finally { em.close(); }
+    }
+
+    public List<Order_24162126> findHistory(Integer userId, String ownerKey, OrderStatus_24162126 status,
+            int page, int pageSize) {
+        if (page < 1 || pageSize < 1 || pageSize > 100) throw new IllegalArgumentException("Phân trang không hợp lệ.");
+        if (userId == null && ownerKey == null) return List.of();
+        EntityManager em = entityManagers.get();
+        try {
+            TypedQuery<Order_24162126> query = em.createQuery("SELECT o FROM Order_24162126 o WHERE "
+                    + visibility(userId, ownerKey) + statusClause(status)
+                    + " ORDER BY o.createdAt DESC, o.id DESC", Order_24162126.class);
+            bindViewer(query, userId, ownerKey);
+            if (status != null) query.setParameter("status", status.getCode());
+            // Do not fetch the items collection here: SQL pagination applies to orders.
+            return query.setFirstResult(Math.multiplyExact(page - 1, pageSize)).setMaxResults(pageSize).getResultList();
+        } finally { em.close(); }
+    }
+
+    private String statusClause(OrderStatus_24162126 status) {
+        return status == null ? "" : " AND o.status = :status";
+    }
+
+    private String visibility(Integer userId, String ownerKey) {
+        // A shared browser session must never expose another account's orders.
+        String account = userId == null ? "1 = 0" : "o.userId = :userId";
+        String guest = ownerKey == null ? "1 = 0" : "(o.userId IS NULL AND o.ownerKey = :owner)";
+        return "(" + account + " OR " + guest + ")";
+    }
+
+    private void bindViewer(Query query, Integer userId, String ownerKey) {
+        if (userId != null) query.setParameter("userId", userId);
+        if (ownerKey != null) query.setParameter("owner", ownerKey);
     }
 }

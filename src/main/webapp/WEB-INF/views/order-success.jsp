@@ -4,12 +4,13 @@
 <c:set var="ctx" value="${pageContext.request.contextPath}" />
 <!DOCTYPE html>
 <html lang="vi">
-<head><title>Đặt hàng thành công</title></head>
+<head><title>Chi tiết đơn hàng</title></head>
 <body>
-    <div class="alert alert-success" role="status">Đặt hàng thành công! Bạn sẽ thanh toán khi nhận hàng.</div>
+    <c:if test="${orderJustPlaced and order.status == 'PENDING'}"><div class="alert alert-success" role="status">Đặt hàng thành công! Bạn sẽ thanh toán khi nhận hàng.</div></c:if>
     <h3>Đơn hàng #${order.id}</h3>
-    <p>Trạng thái đơn: <strong>Chờ xác nhận</strong></p>
-    <p>Thanh toán: <strong>COD — Chưa thanh toán</strong></p>
+    <p>Ngày đặt: <c:out value="${order.createdAtDisplay}" /></p>
+    <p>Trạng thái đơn: <span class="badge ${order.statusBadgeClass}"><c:out value="${order.statusLabel}" /></span></p>
+    <p>Thanh toán: <strong><c:out value="${order.paymentMethod}" /> — <c:out value="${order.paymentStatusLabel}" /></strong></p>
     <div class="card mb-3"><div class="card-body">
         <h4>Thông tin nhận hàng</h4>
         <p>Người nhận: <c:out value="${order.recipientName}" /></p>
@@ -30,9 +31,10 @@
                     </tr>
                 </c:forEach>
             </tbody>
-            <tfoot><tr><th colspan="3">Số tiền thanh toán khi nhận hàng</th><td class="fw-bold"><fmt:formatNumber value="${order.total}" minFractionDigits="2" maxFractionDigits="2" /></td></tr></tfoot>
+            <tfoot><tr><th colspan="3">Tổng tiền đơn hàng</th><td class="fw-bold"><fmt:formatNumber value="${order.total}" minFractionDigits="2" maxFractionDigits="2" /></td></tr></tfoot>
         </table>
     </div>
+    <a href="${ctx}/orders" class="btn btn-outline-secondary">Lịch sử đặt hàng</a>
     <a href="${ctx}/books" class="btn btn-primary">Tiếp tục mua sách</a>
 </body>
 </html>

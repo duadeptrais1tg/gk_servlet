@@ -3,6 +3,8 @@ package com.vn.thu.entity;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import com.vn.thu.model.OrderStatus_24162126;
 import java.util.ArrayList;
 import java.util.List;
 import com.vn.thu.model.ShippingDetails_24162126;
@@ -69,6 +71,26 @@ public class Order_24162126 implements Serializable {
     public String getPaymentMethod() { return paymentMethod; }
     public String getPaymentStatus() { return paymentStatus; }
     public String getStatus() { return status; }
+    public String getStatusLabel() {
+        OrderStatus_24162126 state = OrderStatus_24162126.fromCode(status);
+        return state == null ? "Trạng thái không xác định" : state.getLabel();
+    }
+    public String getStatusBadgeClass() {
+        OrderStatus_24162126 state = OrderStatus_24162126.fromCode(status);
+        return state == null ? "text-bg-secondary" : state.getBadgeClass();
+    }
+    public String getCreatedAtDisplay() {
+        return createdAt == null ? "" : createdAt.format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
+    }
+    public String getPaymentStatusLabel() {
+        if (paymentStatus == null) return "Không xác định";
+        return switch (paymentStatus) {
+            case "UNPAID" -> "Chưa thanh toán";
+            case "PAID" -> "Đã thanh toán";
+            case "REFUNDED" -> "Đã hoàn tiền";
+            default -> "Không xác định";
+        };
+    }
     public BigDecimal getTotal() { return total; }
     public List<OrderItem_24162126> getItems() { return List.copyOf(items); }
 }

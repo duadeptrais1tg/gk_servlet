@@ -9,6 +9,7 @@ import java.util.concurrent.*;
 import com.vn.thu.entity.Book_24162126;
 import com.vn.thu.entity.Order_24162126;
 import com.vn.thu.model.Cart_24162126;
+import com.vn.thu.model.OrderStatus_24162126;
 import com.vn.thu.model.CheckoutDraft_24162126;
 import com.vn.thu.model.ShippingDetails_24162126;
 import jakarta.persistence.*;
@@ -183,5 +184,100 @@ public class OrderService_24162126Test {
         first.setPrice(new BigDecimal("15.00"));
         cart.update(first, 1);
         assertFalse(draft.matches(cart));
+    }
+    private void updateStatusInDatabase(long id, String status) {
+        EntityManager em = factory.createEntityManager();
+        try {
+            em.getTransaction().begin();
+            em.createNativeQuery("UPDATE customer_orders SET status = :status WHERE id = :id")
+                    .setParameter("status", status).setParameter("id", id).executeUpdate();
+            em.getTransaction().commit();
+        } finally { em.close(); }
+    }
+
+    @Test public void sqlStatusChangesMoveOrderBetweenAllEightFiltersAndRefreshDetail() {
+        Order_24162126 order = place(cart(first, 1));
+        OrderStatus_24162126 previous = null;
+        for (OrderStatus_24162126 status : OrderStatus_24162126.values()) {
+            updateStatusInDatabase(order.getId(), status.getCode());
+            assertEquals(1, service.countHistory(null, owner, status));
+            var history = service.findHistory(null, owner, status, 1, 10);
+            assertEquals(1, history.size());
+            assertEquals(order.getId(), history.get(0).getId());
+            assertEquals(status.getLabel(), history.get(0).getStatusLabel());
+            assertEquals(status.getCode(), service.findForOwner(order.getId(), owner).getStatus());
+            if (previous != null) {
+                assertEquals(0, service.countHistory(null, owner, previous));
+                assertTrue(service.findHistory(null, owner, previous, 1, 10).isEmpty());
+            }
+            previous = status;
+        }
+        assertEquals(1, service.countHistory(null, owner, null));
+        assertEquals(4, stock(first));
+    }
+
+    @Test public void accountHistorySurvivesNewSessionAndDoesNotLeakAcrossAccounts() {
+        Order_24162126 accountOrder = service.placeCodOrder(UUID.randomUUID().toString(), owner, 101,
+                shipping, cart(first, 1).getItems());
+        Order_24162126 guestOrder = place(cart(first, 1));
+        String newSession = UUID.randomUUID().toString();
+        assertEquals(1, service.countHistory(101, newSession, null));
+        assertEquals(accountOrder.getId(), service.findHistory(101, newSession, null, 1, 10).get(0).getId());
+        assertNotNull(service.findForOwner(accountOrder.getId(), 101, newSession));
+        assertNotNull(service.findForOwner(accountOrder.getId(), 101, null));
+        assertEquals(2, service.countHistory(101, owner, null));
+        assertEquals(1, service.countHistory(202, owner, null));
+        assertEquals(guestOrder.getId(), service.findHistory(202, owner, null, 1, 10).get(0).getId());
+        assertNull(service.findForOwner(accountOrder.getId(), 202, owner));
+        assertNull(service.findForOwner(accountOrder.getId(), null, owner));
+        assertEquals(0, service.countHistory(202, newSession, null));
+    }
+
+    @Test public void guestsOnlySeeOwnOrdersAndAnonymousRequestsSeeNothing() {
+        Order_24162126 own = place(cart(first, 1));
+        String stranger = UUID.randomUUID().toString();
+        service.placeCodOrder(UUID.randomUUID().toString(), stranger, null, shipping, cart(first, 1).getItems());
+        assertEquals(1, service.countHistory(null, owner, null));
+        assertEquals(own.getId(), service.findHistory(null, owner, null, 1, 10).get(0).getId());
+        assertNull(service.findForOwner(own.getId(), stranger));
+        assertEquals(0, service.countHistory(null, null, null));
+        assertTrue(service.findHistory(null, null, null, 1, 10).isEmpty());
+    }
+
+    @Test public void historyPaginationIsNewestFirstAndFilterIsAppliedBeforePagination() {
+        Order_24162126 old = place(cart(first, 1));
+        Order_24162126 middle = place(cart(first, 1));
+        Order_24162126 newest = place(cart(first, 1));
+        updateStatusInDatabase(old.getId(), "CONFIRMED");
+        updateStatusInDatabase(newest.getId(), "CONFIRMED");
+        var page1 = service.findHistory(null, owner, null, 1, 2);
+        var page2 = service.findHistory(null, owner, null, 2, 2);
+        assertEquals(List.of(newest.getId(), middle.getId()), page1.stream().map(Order_24162126::getId).toList());
+        assertEquals(List.of(old.getId()), page2.stream().map(Order_24162126::getId).toList());
+        assertEquals(2, service.countHistory(null, owner, OrderStatus_24162126.CONFIRMED));
+        assertEquals(old.getId(), service.findHistory(null, owner, OrderStatus_24162126.CONFIRMED, 2, 1).get(0).getId());
+        assertThrows(IllegalArgumentException.class, () -> service.findHistory(null, owner, null, 0, 10));
+    }
+
+    @Test public void unknownDatabaseStatusRemainsVisibleInAllOrdersWithoutBreakingDetail() {
+        Order_24162126 order = place(cart(first, 1));
+        updateStatusInDatabase(order.getId(), "INVALID_STATUS");
+        assertEquals(1, service.countHistory(null, owner, null));
+        assertEquals(0, service.countHistory(null, owner, OrderStatus_24162126.PENDING));
+        assertEquals("Trạng thái không xác định", service.findForOwner(order.getId(), owner).getStatusLabel());
+    }
+
+    @Test public void paymentStatusComesFromDatabaseIndependentlyOfDeliveryStatus() {
+        Order_24162126 order = place(cart(first, 1));
+        updateStatusInDatabase(order.getId(), "DELIVERED");
+        assertEquals("Chưa thanh toán", service.findForOwner(order.getId(), owner).getPaymentStatusLabel());
+        EntityManager em = factory.createEntityManager();
+        try {
+            em.getTransaction().begin();
+            em.createNativeQuery("UPDATE customer_orders SET payment_status = 'PAID' WHERE id = :id")
+                    .setParameter("id", order.getId()).executeUpdate();
+            em.getTransaction().commit();
+        } finally { em.close(); }
+        assertEquals("Đã thanh toán", service.findForOwner(order.getId(), owner).getPaymentStatusLabel());
     }
 }

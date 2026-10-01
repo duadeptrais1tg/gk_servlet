@@ -88,6 +88,7 @@ public class CheckoutController_24162126 extends HttpServlet {
                         account == null ? null : account.getId(), shipping, draft.getItems());
                 session.setAttribute("completedCheckoutToken", token);
                 session.setAttribute("completedOrderId", order.getId());
+                session.setAttribute("orderSuccessId", order.getId());
                 session.removeAttribute("checkoutDraft");
                 session.removeAttribute("cart");
                 session.removeAttribute("cartMessage");
@@ -116,12 +117,20 @@ public class CheckoutController_24162126 extends HttpServlet {
         Order_24162126 order = null;
         if (session != null) {
             try {
-                order = orders.findForOwner(Long.parseLong(req.getParameter("id")), (String) session.getAttribute("orderOwnerKey"));
+                User_24162126 account = (User_24162126) session.getAttribute(Constant_24162126.SESSION_ACCOUNT);
+                order = orders.findForOwner(Long.parseLong(req.getParameter("id")), account == null ? null : account.getId(),
+                        (String) session.getAttribute("orderOwnerKey"));
             } catch (NumberFormatException ignored) { }
         }
         if (order == null) {
             resp.sendError(HttpServletResponse.SC_NOT_FOUND);
             return;
+        }
+        synchronized (session) {
+            if (order.getId().equals(session.getAttribute("orderSuccessId"))) {
+                req.setAttribute("orderJustPlaced", true);
+                session.removeAttribute("orderSuccessId");
+            }
         }
         req.setAttribute("order", order);
         req.getRequestDispatcher("/WEB-INF/views/order-success.jsp").forward(req, resp);

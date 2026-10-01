@@ -20,6 +20,7 @@
 				<li class="nav-item"><a class="nav-link" href="${ctx}/">Trang Chủ</a></li>
 				<li class="nav-item"><a class="nav-link" href="${ctx}/books">Sản phẩm</a></li>
 <li class="nav-item"><a class="nav-link" href="${ctx}/cart">Giỏ hàng (${empty sessionScope.cart ? 0 : sessionScope.cart.totalQuantity})</a></li>
+				<li class="nav-item"><a class="nav-link" href="${ctx}/orders">Lịch sử đặt hàng</a></li>
 				<c:if test="${sessionScope.account != null && sessionScope.account.adminRole}">
 					<li class="nav-item"><a class="nav-link" href="${ctx}/admin">Trang quản trị</a></li>
 				</c:if>
