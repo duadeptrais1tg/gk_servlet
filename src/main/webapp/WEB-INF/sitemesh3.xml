@@ -1,0 +1,14 @@
+<sitemesh>
+	<!-- SiteMesh 3 tu them tien to /WEB-INF/decorators/ -> chi ghi ten file JSP -->
+
+	<!-- Khong trang tri anh va file tinh -->
+	<mapping path="/image" exclude="true" />
+	<mapping path="/css/*" exclude="true" />
+
+	<!-- Vai tro Admin -->
+	<mapping path="/admin" decorator="admin.jsp" />
+	<mapping path="/admin/*" decorator="admin.jsp" />
+
+	<!-- Vai tro User (mac dinh toan site) -->
+	<mapping path="/*" decorator="user.jsp" />
+</sitemesh>
