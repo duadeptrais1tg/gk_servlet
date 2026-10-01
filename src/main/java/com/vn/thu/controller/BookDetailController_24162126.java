@@ -1,6 +1,7 @@
 package com.vn.thu.controller;
 
 import java.io.IOException;
+import com.vn.thu.util.CartSession_24162126;
 
 import com.vn.thu.entity.Book_24162126;
 import com.vn.thu.service.IBookService_24162126;
@@ -21,6 +22,7 @@ public class BookDetailController_24162126 extends HttpServlet {
 
 	@Override
 	protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+		CartSession_24162126.ensureToken(req.getSession());
 		Book_24162126 book = null;
 		try {
 			book = bookService.findById(Integer.parseInt(req.getParameter("id")));

@@ -1,6 +1,7 @@
 package com.vn.thu.controller;
 
 import java.io.IOException;
+import com.vn.thu.util.CartSession_24162126;
 import java.util.List;
 
 import com.vn.thu.config.Constant_24162126;
@@ -23,6 +24,7 @@ public class HomeController_24162126 extends HttpServlet {
 
 	@Override
 	protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+		CartSession_24162126.ensureToken(req.getSession());
 		int pageSize = Constant_24162126.HOME_PAGE_SIZE;
 		int totalPages = bookService.totalPages(pageSize);
 		int page = parsePage(req.getParameter("page"), totalPages);

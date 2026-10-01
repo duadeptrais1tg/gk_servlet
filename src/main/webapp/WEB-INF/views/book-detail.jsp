@@ -24,8 +24,21 @@
 				<p><strong>Tác giả:</strong> ${book.authorNames}</p>
 				<p><strong>Publisher:</strong> ${book.publisher}</p>
 				<p><strong>Publisher_date:</strong> ${book.publishDate}</p>
-				<p><strong>Quantity:</strong> ${book.quantity}</p>
+				<p><strong>Quantity:</strong> ${book.quantity}</p><p><strong>Giá:</strong> ${book.price}</p>
 				<p><strong>Reviews</strong> (${reviewCount})</p>
+<c:choose>
+    <c:when test="${book.quantity > 0 and book.price != null and book.price >= 0}">
+        <form method="post" action="${ctx}/cart" class="d-flex flex-wrap gap-2 align-items-center mt-3">
+            <input type="hidden" name="cartToken" value="${sessionScope.cartToken}">
+            <input type="hidden" name="action" value="add">
+            <input type="hidden" name="bookId" value="${book.bookid}">
+            <label for="quantity-${book.bookid}">Số lượng</label>
+            <input id="quantity-${book.bookid}" type="number" name="quantity" class="form-control" style="width: 6rem" min="1" max="${book.quantity}" step="1" value="1" required>
+            <button class="btn btn-primary">Thêm vào giỏ hàng</button>
+        </form>
+    </c:when>
+    <c:otherwise><p class="text-danger mt-3">Sách hiện không có sẵn để mua.</p></c:otherwise>
+</c:choose>
 			</td>
 		</tr>
 

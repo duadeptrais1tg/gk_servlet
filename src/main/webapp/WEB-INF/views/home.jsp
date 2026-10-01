@@ -20,8 +20,21 @@
 						<p><strong>Tác giả:</strong> ${b.authorNames}</p>
 						<p><strong>Publisher:</strong> ${b.publisher}</p>
 						<p><strong>Publisher_date:</strong> ${b.publishDate}</p>
-						<p><strong>Quantity:</strong> ${b.quantity}</p>
+						<p><strong>Quantity:</strong> ${b.quantity}</p><p><strong>Giá:</strong> ${b.price}</p>
 						<p><strong>Review</strong> (${reviewCounts[b.bookid] != null ? reviewCounts[b.bookid] : 0})</p>
+<c:choose>
+    <c:when test="${b.quantity > 0 and b.price != null and b.price >= 0}">
+        <form method="post" action="${ctx}/cart" class="d-flex flex-wrap gap-2 align-items-center mt-3">
+            <input type="hidden" name="cartToken" value="${sessionScope.cartToken}">
+            <input type="hidden" name="action" value="add">
+            <input type="hidden" name="bookId" value="${b.bookid}">
+            <label for="quantity-${b.bookid}">Số lượng</label>
+            <input id="quantity-${b.bookid}" type="number" name="quantity" class="form-control" style="width: 6rem" min="1" max="${b.quantity}" step="1" value="1" required>
+            <button class="btn btn-primary">Thêm vào giỏ hàng</button>
+        </form>
+    </c:when>
+    <c:otherwise><p class="text-danger mt-3">Sách hiện không có sẵn để mua.</p></c:otherwise>
+</c:choose>
 					</div>
 				</div>
 			</div>
