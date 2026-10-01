@@ -4,6 +4,8 @@
 		<provider>org.hibernate.jpa.HibernatePersistenceProvider</provider>
 
 		<class>com.vn.thu.entity.Book_24162126</class>
+		<class>com.vn.thu.entity.Order_24162126</class>
+		<class>com.vn.thu.entity.OrderItem_24162126</class>
 		<class>com.vn.thu.entity.Author_24162126</class>
 		<class>com.vn.thu.entity.User_24162126</class>
 		<class>com.vn.thu.entity.Rating_24162126</class>

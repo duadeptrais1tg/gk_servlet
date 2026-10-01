@@ -51,6 +51,7 @@
                     <tfoot><tr><th colspan="3" class="text-end">Tổng tiền</th><td colspan="2" class="fw-bold"><fmt:formatNumber value="${cartTotal}" minFractionDigits="2" maxFractionDigits="2" /></td></tr></tfoot>
                 </table>
             </div>
+            <a href="${ctx}/checkout" class="btn btn-success mb-3">Thanh toán COD</a>
         </c:otherwise>
     </c:choose>
     <a href="${ctx}/books" class="btn btn-secondary">Tiếp tục chọn sách</a>

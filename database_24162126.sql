@@ -49,3 +49,30 @@ CREATE TABLE IF NOT EXISTS rating (
     FOREIGN KEY (userid) REFERENCES users(id),
     FOREIGN KEY (bookid) REFERENCES books(bookid)
 );
+
+-- COD orders: snapshot prices/titles survive catalog changes.
+CREATE TABLE IF NOT EXISTS customer_orders (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    checkout_token VARCHAR(36) NOT NULL UNIQUE,
+    owner_key VARCHAR(36) NOT NULL,
+    user_id INT NULL,
+    recipient_name VARCHAR(100) NOT NULL,
+    phone VARCHAR(16) NOT NULL,
+    address VARCHAR(500) NOT NULL,
+    note VARCHAR(1000) NULL,
+    created_at DATETIME(6) NOT NULL,
+    payment_method VARCHAR(20) NOT NULL,
+    payment_status VARCHAR(20) NOT NULL,
+    status VARCHAR(20) NOT NULL,
+    total DECIMAL(24,2) NOT NULL
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS order_items (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    order_id BIGINT NOT NULL,
+    book_id INT NOT NULL,
+    title VARCHAR(200) NULL,
+    price DECIMAL(24,2) NOT NULL,
+    quantity INT NOT NULL,
+    FOREIGN KEY (order_id) REFERENCES customer_orders(id)
+) ENGINE=InnoDB;
